@@ -1,5 +1,5 @@
 import os
-
+from google.genai import types
 
 def get_file_content(working_directory, file_path):
     join_path = os.path.join(working_directory, file_path)
@@ -22,4 +22,18 @@ def get_file_content(working_directory, file_path):
             return file_content_string[:max_chars] + f'[...File "{file_path}" truncated at 10000 characters]'
     except Exception as e:
         return f"Error: {str(e)}"   
-    
+
+
+schema_get_files_cont = types.FunctionDeclaration(
+    name="get_file_content",
+    description="Reads the contents of a specified file, constrained to the working directory.",
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={
+            "file_path": types.Schema(
+                type=types.Type.STRING,
+                description="The path to the file to read, relative to the working directory.",
+            ),
+        },
+    ),
+)
