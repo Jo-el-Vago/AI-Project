@@ -8,6 +8,7 @@ from functions.get_files_info import schema_get_files_info
 from functions.get_file_cont import schema_get_files_cont
 from functions.write_file import schema_write_file
 from functions.run_python import schema_run_python
+from functions.call_function import call_function
 
 
 load_dotenv()
@@ -55,7 +56,14 @@ response = client.models.generate_content(
     )
 if response.function_calls:
     for call in response.function_calls:
-        print(f"Calling function: {call.name}({call.args})")
+        #print(f"Calling function: {call.name}({call.args})")
+        function_call_result = call_function(call, verbose = args.verbose)
+        try:
+            call_result = function_call_result.parts[0].function_response.response
+            if args.verbose == True:
+                print(f"-> {function_call_result.parts[0].function_response.response}")
+        except Exception as e:
+            print (f"Error: Function calling : {e}")
 else:    
     print(response.text)
 
