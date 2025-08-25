@@ -47,27 +47,41 @@ available_functions = types.Tool(
 messages = [
     types.Content(role="user", parts=[types.Part(text=user_prompt)])
 ]
+counter = 0
+try:
+    while counter < 20:
 
-response = client.models.generate_content(
-    model = 'gemini-2.0-flash-001',
-    contents= messages,
-    config=types.GenerateContentConfig(system_instruction=system_prompt,
-                                       tools=[available_functions]),
-    )
-if response.function_calls:
-    for call in response.function_calls:
-        #print(f"Calling function: {call.name}({call.args})")
-        function_call_result = call_function(call, verbose = args.verbose)
-        try:
-            call_result = function_call_result.parts[0].function_response.response
-            if args.verbose == True:
-                print(f"-> {function_call_result.parts[0].function_response.response}")
-        except Exception as e:
-            print (f"Error: Function calling : {e}")
-else:    
-    print(response.text)
+        response = client.models.generate_content(
+            model = 'gemini-2.0-flash-001',
+            contents= messages,
+            config=types.GenerateContentConfig(system_instruction=system_prompt,
+                                        tools=[available_functions]),
+            )
+        if response.candidates:
+            for candidate in response.candidates:
+                messages.append(candidate.content)
+        if response.function_calls:
+            function_responses = []
+            for call in response.function_calls:
+                print(f" - Calling function: {call.name}")
+                function_call_result = call_function(call, verbose = args.verbose)
+                try:
+                    call_result = function_call_result.parts[0].function_response.response
+                    if args.verbose == True:
+                        print(f"-> {function_call_result.parts[0].function_response.response}")
+                except Exception as e:
+                    print (f"Error: Function calling : {e}")
+                function_responses.append(function_call_result.parts[0])
+            messages.append(types.Content(role="user", parts=function_responses))
+        else:
+            print("Final response:")    
+            print(response.text)
+            break
 
-if args.verbose:
-    print (f"User prompt: {args.prompt}")
-    print (f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
-    print (f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        #if args.verbose:
+            #print (f"User prompt: {args.prompt}")
+            #print (f"Prompt tokens: {response.usage_metadata.prompt_token_count}")
+            #print (f"Response tokens: {response.usage_metadata.candidates_token_count}")
+        counter += 1
+except Exception as e:
+    print(f"Error during agent execution: {e}")
